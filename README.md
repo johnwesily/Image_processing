@@ -53,9 +53,5 @@ node src/workers/imageWorker.js
 
 The worker will process jobs from the Redis queue and handle image processing tasks.
 
-## API Endpoints
-
-- **POST /process-image**: Accepts an image and adds the task to the Redis queue for processing.
-- **GET /status**: Checks the current status of image processing tasks.
 
 
