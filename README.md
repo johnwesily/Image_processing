@@ -39,7 +39,7 @@ redis-server
 
 Run the following command to start the backend server:
 ```bash
-npm start
+nodemon src/server.js
 ```
 
 The backend server will run on `http://localhost:3001` by default.

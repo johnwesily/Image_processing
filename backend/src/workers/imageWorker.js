@@ -1,3 +1,5 @@
+// 
+
 const fs = require('fs');
 const path = require('path');
 const Queue = require('bull');
@@ -34,13 +36,11 @@ imageQueue.process(async (job) => {
     request.status = 'In Progress';
     await request.save();
 
-    // Flag to track processing success
     let processingFailed = false;
 
     // Process each product
     for (const product of request.products) {
       const { inputImageUrls, serialNumber, productName } = product;
-
       const outputImageUrls = [];
 
       for (const url of inputImageUrls) {
@@ -65,7 +65,9 @@ imageQueue.process(async (job) => {
           });
 
           // Simulate uploading the compressed image
-          const outputUrl = `https://example.com/${path.basename(compressedPath)}`;
+          const outputUrl = `${process.env.BASE_URL || 'https://example.com'}/${path.basename(
+            compressedPath
+          )}`;
           outputImageUrls.push(outputUrl);
 
           console.log(`Processed image for ${productName} (${serialNumber}): ${url}`);
@@ -99,15 +101,22 @@ imageQueue.process(async (job) => {
 });
 
 // Log job failures
-imageQueue.on('Incomplete', (job, err) => {
+imageQueue.on('failed', async (job, err) => {
   console.error(`Job failed for Request ID: ${job.data.requestId}`, err);
-  // Mark status as Incomplete if the worker fails completely
-  Request.findOneAndUpdate(
-    { requestId: job.data.requestId },
-    { $set: { status: 'failed' } }
-  ).catch(console.error);
+  try {
+    await Request.findOneAndUpdate(
+      { requestId: job.data.requestId },
+      { $set: { status: 'Failed' } }
+    );
+  } catch (updateError) {
+    console.error(`Failed to update status for Request ID: ${job.data.requestId}`, updateError);
+  }
+});
+
+// Retry configuration
+imageQueue.on('error', (error) => {
+  console.error('Queue error:', error);
 });
 
 console.log('Image worker is running...');
-
 module.exports = imageQueue;
